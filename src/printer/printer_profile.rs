@@ -1,8 +1,7 @@
 use std::collections::HashMap;
-use crate::{
-    Error,
-    command::Font
-};
+
+use crate::command::Font;
+use crate::Error;
 
 /// Available connections with the printer
 ///
@@ -18,15 +17,17 @@ pub enum PrinterConnectionData {
         /// Endpoint where the usb data is meant to be written to
         endpoint: Option<u8>,
         /// Timeout for bulk write operations
-        timeout: std::time::Duration
+        timeout: std::time::Duration,
     },
     /// Network connection (not implemented yet)
     Network {
-        _host: String,
-        _port: u16
+        /// host to connect to
+        host: String,
+        /// Timeout for bulk write operations
+        timeout: std::time::Duration,
     },
     /// Terminal printer, used for really simple previews.
-    Terminal
+    Terminal,
 }
 
 /// Details required to connect and print
@@ -35,22 +36,26 @@ pub enum PrinterConnectionData {
 #[derive(Clone, Debug)]
 pub struct PrinterProfile {
     /// Existing connection to the printer
-    pub (crate) printer_connection_data: PrinterConnectionData,
+    pub(crate) printer_connection_data: PrinterConnectionData,
     /// Paper width, in characters, for the printer
-    pub (crate) columns_per_font: HashMap<Font, u8>,
+    pub(crate) columns_per_font: HashMap<Font, u8>,
     /// Total printer width in pixels, for image printing
-    pub (crate) width: u16
+    pub(crate) width: u16,
 }
 
 impl PrinterProfile {
     /// Create custom printing details
     ///
     /// Not recommended to use, as it contains a lot of arguments. See one of the builders instead (at the moment, only [usb_builder](PrinterProfile::usb_builder) and [terminal_builder](PrinterProfile::terminal_builder) available).
-    pub fn new(printer_connection_data: PrinterConnectionData, columns_per_font: HashMap<Font, u8>, width: u16) -> PrinterProfile {
+    pub fn new(
+        printer_connection_data: PrinterConnectionData,
+        columns_per_font: HashMap<Font, u8>,
+        width: u16,
+    ) -> PrinterProfile {
         PrinterProfile {
             printer_connection_data,
             columns_per_font,
-            width
+            width,
         }
     }
 
@@ -87,8 +92,8 @@ pub struct PrinterProfileBuilder {
     printer_connection_data: PrinterConnectionData,
     /// Columns that each font spans at maximum
     columns_per_font: HashMap<Font, u8>,
-    /// Widtth, in dots, of the printer
-    width: u16
+    /// Width, in dots, of the printer
+    width: u16,
 }
 
 impl PrinterProfileBuilder {
@@ -109,10 +114,10 @@ impl PrinterProfileBuilder {
                 vendor_id,
                 product_id,
                 endpoint: None,
-                timeout: std::time::Duration::from_secs(2)
+                timeout: std::time::Duration::from_secs(2),
             },
             columns_per_font: vec![(Font::FontA, 32)].into_iter().collect(),
-            width: 384
+            width: 384,
         }
     }
 
@@ -129,7 +134,7 @@ impl PrinterProfileBuilder {
         PrinterProfileBuilder {
             printer_connection_data: PrinterConnectionData::Terminal,
             columns_per_font: vec![(Font::FontA, 32)].into_iter().collect(),
-            width: 384
+            width: 384,
         }
     }
 
@@ -144,11 +149,14 @@ impl PrinterProfileBuilder {
     /// ```
     pub fn with_endpoint(mut self, endpoint: u8) -> Result<PrinterProfileBuilder, Error> {
         match &mut self.printer_connection_data {
-            PrinterConnectionData::Usb{endpoint: self_endpoint, ..} => {
+            PrinterConnectionData::Usb {
+                endpoint: self_endpoint,
+                ..
+            } => {
                 *self_endpoint = Some(endpoint);
                 Ok(self)
-            },
-            _other => Err(Error::UnsupportedForPrinterConnection)
+            }
+            _other => Err(Error::UnsupportedForPrinterConnection),
         }
     }
 
@@ -189,13 +197,19 @@ impl PrinterProfileBuilder {
     ///     .with_timeout(std::time::Duration::from_secs(3)).unwrap()
     ///     .build();
     /// ```
-    pub fn with_timeout(mut self, timeout: std::time::Duration) -> Result<PrinterProfileBuilder, Error> {
+    pub fn with_timeout(
+        mut self,
+        timeout: std::time::Duration,
+    ) -> Result<PrinterProfileBuilder, Error> {
         match &mut self.printer_connection_data {
-            PrinterConnectionData::Usb{timeout: self_timeout, ..} => {
+            PrinterConnectionData::Usb {
+                timeout: self_timeout,
+                ..
+            } => {
                 *self_timeout = timeout;
                 Ok(self)
-            },
-            _other => Err(Error::UnsupportedForPrinterConnection)
+            }
+            _other => Err(Error::UnsupportedForPrinterConnection),
         }
     }
 
@@ -209,7 +223,7 @@ impl PrinterProfileBuilder {
         PrinterProfile {
             printer_connection_data: self.printer_connection_data,
             columns_per_font: self.columns_per_font,
-            width: self.width
+            width: self.width,
         }
     }
 }
